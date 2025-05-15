@@ -1,74 +1,155 @@
-import { Image, StyleSheet, Platform } from 'react-native';
+import { StyleSheet, View, Pressable, ScrollView } from "react-native";
+import { router } from "expo-router";
+import { ThemedText } from "../components/ThemedText";
+import { ThemedView } from "../components/ThemedView";
+import { colors, typography, spacing, borderRadius, shadows } from "../theme";
+import { Ionicons } from "@expo/vector-icons";
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+// Import the JSON file
+const azkarData = require("../../assets/azkar.json");
+
+// English translations for categories
+const categoryTranslations: { [key: string]: string } = {
+    "أذكار الصباح": "Morning azkar",
+    "أذكار المساء": "Evening azkar",
+    "أذكار بعد الصلاة": "After Prayer azkar",
+    "أذكار النوم": "Before Sleep azkar",
+    "أذكار الاستيقاظ": "Upon Waking azkar",
+};
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12'
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
-  );
+    // Get categories from the JSON file
+    const categories = Object.keys(azkarData).map((key) => ({
+        id: key,
+        title: categoryTranslations[key] || key,
+        arabicTitle: key,
+    }));
+
+    return (
+        <ThemedView style={styles.container}>
+            <View style={styles.header}>
+                <ThemedText style={styles.headerTitle}>الأذكار</ThemedText>
+                <ThemedText style={styles.headerSubtitle}>
+                    Daily azkar
+                </ThemedText>
+            </View>
+
+            <ScrollView
+                style={styles.scrollView}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+            >
+                <View style={styles.categoriesContainer}>
+                    {categories.map((category, index) => (
+                        <Pressable
+                            key={category.id}
+                            style={({ pressed }) => [
+                                styles.categoryCard,
+                                pressed && styles.categoryCardPressed,
+                            ]}
+                            onPress={() =>
+                                router.push(
+                                    `/azkar/${encodeURIComponent(category.id)}`
+                                )
+                            }
+                        >
+                            <View style={styles.categoryIcon}>
+                                <Ionicons
+                                    name="book-outline"
+                                    size={24}
+                                    color={colors.primary}
+                                />
+                            </View>
+                            <View style={styles.categoryContent}>
+                                <ThemedText style={styles.categoryTitle}>
+                                    {category.arabicTitle}
+                                </ThemedText>
+                                <ThemedText style={styles.categorySubtitle}>
+                                    {category.title}
+                                </ThemedText>
+                                <ThemedText style={styles.categoryCount}>
+                                    {(azkarData[category.id] || []).length}{" "}
+                                    azkar
+                                </ThemedText>
+                            </View>
+                            <Ionicons
+                                name="chevron-forward"
+                                size={24}
+                                color={colors.textSecondary}
+                            />
+                        </Pressable>
+                    ))}
+                </View>
+            </ScrollView>
+        </ThemedView>
+    );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
+    container: {
+        flex: 1,
+        backgroundColor: colors.background,
+    },
+    header: {
+        padding: spacing.xl,
+        backgroundColor: colors.surface,
+        alignItems: "center",
+        gap: spacing.sm,
+        ...shadows.small,
+    },
+    headerTitle: {
+        ...typography.headerLarge,
+        color: colors.text,
+    },
+    headerSubtitle: {
+        ...typography.bodyMedium,
+        color: colors.textSecondary,
+    },
+    scrollView: {
+        flex: 1,
+    },
+    scrollContent: {
+        flexGrow: 1,
+    },
+    categoriesContainer: {
+        padding: spacing.md,
+        gap: spacing.md,
+    },
+    categoryCard: {
+        backgroundColor: colors.surface,
+        borderRadius: borderRadius.lg,
+        padding: spacing.lg,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.md,
+        ...shadows.small,
+    },
+    categoryCardPressed: {
+        opacity: 0.8,
+        transform: [{ scale: 0.98 }],
+    },
+    categoryIcon: {
+        width: 48,
+        height: 48,
+        borderRadius: borderRadius.md,
+        backgroundColor: colors.background,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    categoryContent: {
+        flex: 1,
+        gap: spacing.xs,
+    },
+    categoryTitle: {
+        ...typography.headerSmall,
+        color: colors.text,
+    },
+    categorySubtitle: {
+        ...typography.bodySmall,
+        color: colors.textSecondary,
+    },
+    categoryCount: {
+        ...typography.bodySmall,
+        color: colors.textSecondary,
+    },
 });

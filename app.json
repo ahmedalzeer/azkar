@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "todo-list",
-    "slug": "todo-list",
+    "slug": "azkar",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -36,6 +36,15 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "5120a044-8eed-49cd-b277-c673679c78ef"
+      }
+    },
+    "owner": "ahmedalzeer"
   }
 }
