@@ -5,32 +5,42 @@ import { ThemedView } from "../components/ThemedView";
 import { colors, typography, spacing, borderRadius, shadows } from "../theme";
 import { Ionicons } from "@expo/vector-icons";
 
-// Import the JSON file
-const azkarData = require("../../assets/azkar.json");
+// Import the Quran data
+const quranData = require("../../assets/hafs_smart_v8.json");
 
-// English translations for categories
-const categoryTranslations: { [key: string]: string } = {
-    "أذكار الصباح": "Morning azkar",
-    "أذكار المساء": "Evening azkar",
-    "أذكار بعد الصلاة": "After Prayer azkar",
-    "أذكار النوم": "Before Sleep azkar",
-    "أذكار الاستيقاظ": "Upon Waking azkar",
-};
+// Create a map of surah information
+const surahMap = new Map();
+quranData.forEach((verse: any) => {
+    if (!surahMap.has(verse.sura_no)) {
+        surahMap.set(verse.sura_no, {
+            number: verse.sura_no,
+            titleAr: verse.sura_name_ar,
+            title: verse.sura_name_en,
+            // We'll determine Makkiyah/Madaniyah based on surah number
+            type: verse.sura_no > 28 ? "Makkiyah" : "Madaniyah",
+            firstVerse: verse.aya_text_emlaey,
+            verseCount: 0,
+        });
+    }
+    // Increment verse count
+    const surah = surahMap.get(verse.sura_no);
+    surah.verseCount++;
+});
 
-export default function HomeScreen() {
-    // Get categories from the JSON file
-    const categories = Object.keys(azkarData).map((key) => ({
-        id: key,
-        title: categoryTranslations[key] || key,
-        arabicTitle: key,
-    }));
+// Convert map to array and sort by surah number
+const surahs = Array.from(surahMap.values()).sort(
+    (a, b) => a.number - b.number
+);
 
+export default function QuranScreen() {
     return (
         <ThemedView style={styles.container}>
             <View style={styles.header}>
-                <ThemedText style={styles.headerTitle}>الأذكار</ThemedText>
+                <ThemedText style={styles.headerTitle}>
+                    القرآن الكريم
+                </ThemedText>
                 <ThemedText style={styles.headerSubtitle}>
-                    Daily azkar
+                    Hafs Smart v8
                 </ThemedText>
             </View>
 
@@ -39,44 +49,47 @@ export default function HomeScreen() {
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-                <View style={styles.categoriesContainer}>
-                    {categories.map((category, index) => (
+                <View style={styles.surahContainer}>
+                    {surahs.map((surah) => (
                         <Pressable
-                            key={category.id}
+                            key={surah.number}
                             style={({ pressed }) => [
-                                styles.categoryCard,
-                                pressed && styles.categoryCardPressed,
+                                styles.surahCard,
+                                pressed && styles.surahCardPressed,
                             ]}
                             onPress={() =>
-                                router.push(
-                                    `/azkar/${encodeURIComponent(category.id)}`
-                                )
+                                router.push({
+                                    pathname: "/quran/[id]",
+                                    params: { id: surah.number },
+                                })
                             }
                         >
-                            <View style={styles.categoryIcon}>
-                                <Ionicons
-                                    name="book-outline"
-                                    size={24}
-                                    color={colors.primary}
-                                />
-                            </View>
-                            <View style={styles.categoryContent}>
-                                <ThemedText style={styles.categoryTitle}>
-                                    {category.arabicTitle}
-                                </ThemedText>
-                                <ThemedText style={styles.categorySubtitle}>
-                                    {category.title}
-                                </ThemedText>
-                                <ThemedText style={styles.categoryCount}>
-                                    {(azkarData[category.id] || []).length}{" "}
-                                    azkar
+                            <View style={styles.surahNumberContainer}>
+                                <ThemedText style={styles.surahNumber}>
+                                    {surah.number}
                                 </ThemedText>
                             </View>
-                            <Ionicons
-                                name="chevron-forward"
-                                size={24}
-                                color={colors.textSecondary}
-                            />
+                            <View style={styles.surahContent}>
+                                <ThemedText style={styles.surahName}>
+                                    {surah.titleAr}
+                                </ThemedText>
+                                <ThemedText style={styles.surahEnglishName}>
+                                    {surah.title}
+                                </ThemedText>
+                                <ThemedText style={styles.surahInfo}>
+                                    {surah.type} • {surah.verseCount} Verses
+                                </ThemedText>
+                                {surah.number !== 1 && surah.number !== 9 && (
+                                    <ThemedText style={styles.firstVerse}>
+                                        بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ
+                                    </ThemedText>
+                                )}
+                                {(surah.number === 1 || surah.number === 9) && (
+                                    <ThemedText style={styles.firstVerse}>
+                                        {surah.firstVerse}
+                                    </ThemedText>
+                                )}
+                            </View>
                         </Pressable>
                     ))}
                 </View>
@@ -111,45 +124,57 @@ const styles = StyleSheet.create({
     scrollContent: {
         flexGrow: 1,
     },
-    categoriesContainer: {
+    surahContainer: {
         padding: spacing.md,
         gap: spacing.md,
     },
-    categoryCard: {
+    surahCard: {
         backgroundColor: colors.surface,
         borderRadius: borderRadius.lg,
         padding: spacing.lg,
         flexDirection: "row",
-        alignItems: "center",
+        alignItems: "flex-start",
         gap: spacing.md,
         ...shadows.small,
     },
-    categoryCardPressed: {
+    surahCardPressed: {
         opacity: 0.8,
         transform: [{ scale: 0.98 }],
     },
-    categoryIcon: {
-        width: 48,
-        height: 48,
+    surahNumberContainer: {
+        width: 40,
+        height: 40,
         borderRadius: borderRadius.md,
-        backgroundColor: colors.background,
+        backgroundColor: colors.primary,
         justifyContent: "center",
         alignItems: "center",
     },
-    categoryContent: {
+    surahNumber: {
+        ...typography.bodyLarge,
+        color: colors.surface,
+        fontWeight: "bold",
+    },
+    surahContent: {
         flex: 1,
         gap: spacing.xs,
     },
-    categoryTitle: {
+    surahName: {
         ...typography.headerSmall,
         color: colors.text,
     },
-    categorySubtitle: {
+    surahEnglishName: {
         ...typography.bodySmall,
         color: colors.textSecondary,
     },
-    categoryCount: {
+    surahInfo: {
         ...typography.bodySmall,
         color: colors.textSecondary,
+    },
+    firstVerse: {
+        ...typography.bodyLarge,
+        color: colors.text,
+        textAlign: "right",
+        marginTop: spacing.md,
+        lineHeight: 36,
     },
 });

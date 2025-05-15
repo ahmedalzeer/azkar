@@ -6,8 +6,9 @@ import { colors, typography, spacing } from "../theme";
 export function Footer() {
     return (
         <View style={styles.footer}>
-            <ThemedText style={styles.footerText}>
-                اسالكم الدعاء لوالدي{" "}
+            <ThemedText style={styles.footerName}>احمد علي الزير</ThemedText>
+            <ThemedText style={styles.footerPrayer}>
+                اسألكم الدعاء لوالدي
             </ThemedText>
         </View>
     );
@@ -15,14 +16,22 @@ export function Footer() {
 
 const styles = StyleSheet.create({
     footer: {
-        padding: spacing.md,
+        paddingVertical: spacing.lg,
+        paddingHorizontal: spacing.xl,
         alignItems: "center",
         justifyContent: "center",
         borderTopWidth: 1,
         borderTopColor: colors.border,
     },
-    footerText: {
-        ...typography.bodySmall,
+    footerName: {
+        ...typography.bodyLarge,
+        color: colors.text,
+        fontWeight: "500",
+        marginBottom: spacing.sm,
+    },
+    footerPrayer: {
+        ...typography.bodyMedium,
         color: colors.textSecondary,
+        textAlign: "center",
     },
 });
