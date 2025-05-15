@@ -3,6 +3,7 @@ import { StyleSheet, TouchableOpacity, View, Animated } from "react-native";
 import { ThemedText } from "./ThemedText";
 import { ThemedView } from "./ThemedView";
 import { colors, typography, spacing, borderRadius, shadows } from "../theme";
+import * as Haptics from "expo-haptics";
 
 type SingleDhikrProps = {
     content: string;
@@ -26,6 +27,11 @@ export function SingleDhikr({
     const handlePress = () => {
         const newCount = counter + 1;
         setCounter(newCount);
+
+        // Vibrate when it's the last repeat
+        if (newCount === targetCount - 1) {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
 
         if (newCount >= targetCount) {
             onComplete();
