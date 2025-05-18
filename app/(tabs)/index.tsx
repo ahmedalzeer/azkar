@@ -4,6 +4,8 @@ import { ThemedText } from "../components/ThemedText";
 import { ThemedView } from "../components/ThemedView";
 import { colors, typography, spacing, borderRadius, shadows } from "../theme";
 import { Ionicons } from "@expo/vector-icons";
+import * as Font from "expo-font";
+import { useEffect, useState } from "react";
 
 // Import the Quran data
 const quranData = require("../../assets/hafs_smart_v8.json");
@@ -18,7 +20,7 @@ quranData.forEach((verse: any) => {
             title: verse.sura_name_en,
             // We'll determine Makkiyah/Madaniyah based on surah number
             type: verse.sura_no > 28 ? "Makkiyah" : "Madaniyah",
-            firstVerse: verse.aya_text_emlaey,
+            firstVerse: verse.aya_text,
             verseCount: 0,
         });
     }
@@ -33,10 +35,37 @@ const surahs = Array.from(surahMap.values()).sort(
 );
 
 export default function QuranScreen() {
+    const [fontsLoaded, setFontsLoaded] = useState(false);
+
+    useEffect(() => {
+        loadFonts();
+    }, []);
+
+    const loadFonts = async () => {
+        try {
+            await Font.loadAsync({
+                hafs: require("../../assets/fonts/HafsSmart_08.ttf"),
+            });
+            setFontsLoaded(true);
+        } catch (error) {
+            console.error("Error loading fonts:", error);
+        }
+    };
+
+    if (!fontsLoaded) {
+        return (
+            <ThemedView style={styles.container}>
+                <View style={styles.loadingContainer}>
+                    <ThemedText>جاري تحميل الخط...</ThemedText>
+                </View>
+            </ThemedView>
+        );
+    }
+
     return (
         <ThemedView style={styles.container}>
             <View style={styles.header}>
-                <ThemedText style={styles.headerTitle}>
+                <ThemedText style={styles.headerTitle} isArabic>
                     القرآن الكريم
                 </ThemedText>
                 <ThemedText style={styles.headerSubtitle}>
@@ -70,7 +99,7 @@ export default function QuranScreen() {
                                 </ThemedText>
                             </View>
                             <View style={styles.surahContent}>
-                                <ThemedText style={styles.surahName}>
+                                <ThemedText style={styles.surahName} isArabic>
                                     {surah.titleAr}
                                 </ThemedText>
                                 <ThemedText style={styles.surahEnglishName}>
@@ -80,12 +109,18 @@ export default function QuranScreen() {
                                     {surah.type} • {surah.verseCount} Verses
                                 </ThemedText>
                                 {surah.number !== 1 && surah.number !== 9 && (
-                                    <ThemedText style={styles.firstVerse}>
+                                    <ThemedText
+                                        style={styles.firstVerse}
+                                        isArabic
+                                    >
                                         بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ
                                     </ThemedText>
                                 )}
                                 {(surah.number === 1 || surah.number === 9) && (
-                                    <ThemedText style={styles.firstVerse}>
+                                    <ThemedText
+                                        style={styles.firstVerse}
+                                        isArabic
+                                    >
                                         {surah.firstVerse}
                                     </ThemedText>
                                 )}
@@ -103,6 +138,11 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: colors.background,
     },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+    },
     header: {
         padding: spacing.xl,
         backgroundColor: colors.surface,
@@ -111,12 +151,17 @@ const styles = StyleSheet.create({
         ...shadows.small,
     },
     headerTitle: {
-        ...typography.headerLarge,
+        fontSize: 32,
         color: colors.text,
+        fontFamily: "hafs",
+        textAlign: "center",
+        writingDirection: "rtl",
+        lineHeight: 48,
     },
     headerSubtitle: {
-        ...typography.bodyMedium,
+        fontSize: 16,
         color: colors.textSecondary,
+        textAlign: "center",
     },
     scrollView: {
         flex: 1,
@@ -150,7 +195,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     surahNumber: {
-        ...typography.bodyLarge,
+        fontSize: 18,
         color: colors.surface,
         fontWeight: "bold",
     },
@@ -159,22 +204,30 @@ const styles = StyleSheet.create({
         gap: spacing.xs,
     },
     surahName: {
-        ...typography.headerSmall,
+        fontSize: 24,
         color: colors.text,
+        fontFamily: "hafs",
+        textAlign: "right",
+        writingDirection: "rtl",
+        lineHeight: 36,
     },
     surahEnglishName: {
-        ...typography.bodySmall,
+        fontSize: 14,
         color: colors.textSecondary,
+        textAlign: "left",
     },
     surahInfo: {
-        ...typography.bodySmall,
+        fontSize: 14,
         color: colors.textSecondary,
+        textAlign: "left",
     },
     firstVerse: {
-        ...typography.bodyLarge,
+        fontSize: 20,
         color: colors.text,
         textAlign: "right",
         marginTop: spacing.md,
         lineHeight: 36,
+        fontFamily: "hafs",
+        writingDirection: "rtl",
     },
 });

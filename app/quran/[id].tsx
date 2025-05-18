@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
     StyleSheet,
     View,
@@ -6,12 +6,15 @@ import {
     useWindowDimensions,
     FlatList,
     Image,
+    Pressable,
+    ViewToken,
 } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, Stack } from "expo-router";
 import { ThemedText } from "../components/ThemedText";
 import { ThemedView } from "../components/ThemedView";
 import { colors, typography, spacing } from "../theme";
 import Svg, { Path, G, Circle } from "react-native-svg";
+import * as Font from "expo-font";
 
 // Import the Quran data
 const quranData = require("../../assets/hafs_smart_v8.json");
@@ -143,6 +146,52 @@ const PageNumberFrame = () => (
 export default function SurahScreen() {
     const { id } = useLocalSearchParams();
     const { width } = useWindowDimensions();
+    const [fontsLoaded, setFontsLoaded] = useState(false);
+    const [currentPage, setCurrentPage] = useState(0);
+    const flatListRef = React.useRef(null);
+
+    const viewabilityConfig = React.useRef({
+        itemVisiblePercentThreshold: 50,
+    }).current;
+
+    const onViewableItemsChanged = React.useCallback(
+        ({
+            viewableItems,
+        }: {
+            viewableItems: ViewToken[];
+            changed: ViewToken[];
+        }) => {
+            if (viewableItems.length > 0 && viewableItems[0].index !== null) {
+                setCurrentPage(viewableItems[0].index);
+            }
+        },
+        []
+    );
+
+    // Load fonts
+    useEffect(() => {
+        async function loadFonts() {
+            try {
+                await Font.loadAsync({
+                    hafs: require("../../assets/fonts/hafs.ttf"),
+                });
+                setFontsLoaded(true);
+            } catch (error) {
+                console.error("Error loading fonts:", error);
+            }
+        }
+        loadFonts();
+    }, []);
+
+    if (!fontsLoaded) {
+        return (
+            <View style={styles.container}>
+                <View style={styles.loadingContainer}>
+                    <ThemedText>جاري تحميل الخط...</ThemedText>
+                </View>
+            </View>
+        );
+    }
 
     // Convert id to number since sura_no is numeric in the new format
     const surahNumber = typeof id === "string" ? parseInt(id) : 1;
@@ -192,13 +241,22 @@ export default function SurahScreen() {
     // Don't show Bismillah for Surah At-Tawbah (Surah 9)
     const showBismillah = surahNumber !== 9;
 
-    const renderPage = ({ item: page }: { item: Page }) => (
-        <View style={[styles.pageContainer, { width }]}>
+    const renderPage = ({
+        item: page,
+        index,
+    }: {
+        item: Page;
+        index: number;
+    }) => (
+        <ScrollView
+            style={[styles.pageContainer, { width }]}
+            showsVerticalScrollIndicator={false}
+        >
             {page.pageNumber === pages[0].pageNumber && (
                 <View style={styles.surahHeaderContainer}>
-                    <View style={styles.headerFrameContainer}>
+                    {/* <View style={styles.headerFrameContainer}>
                         <SurahHeaderFrame />
-                    </View>
+                    </View> */}
                     <View style={styles.surahHeader}>
                         <ThemedText style={styles.surahTitle}>
                             {surahInfo.titleAr}
@@ -219,55 +277,37 @@ export default function SurahScreen() {
                     )}
 
                 <View style={styles.versesContainer}>
-                    {page.verses.map((verse) => (
-                        <View
-                            key={verse.id}
-                            style={[
-                                styles.verseWrapper,
-                                verse.line_start === 1 && styles.newLineVerse,
-                            ]}
-                        >
-                            <ThemedText style={styles.verseText}>
-                                {verse.aya_text_emlaey}{" "}
-                                <View style={styles.verseNumberContainer}>
-                                    <VerseNumberFrame />
-                                    <ThemedText style={styles.verseNumber}>
-                                        {verse.aya_no}
-                                    </ThemedText>
-                                </View>
-                            </ThemedText>
-                        </View>
-                    ))}
-                </View>
-
-                <View style={styles.pageFooter}>
-                    <View style={styles.pageNumberContainer}>
-                        <PageNumberFrame />
-                        <ThemedText style={styles.pageNumber}>
-                            {page.pageNumber}
-                        </ThemedText>
-                    </View>
+                    <ThemedText style={styles.verseText}>
+                        {page.verses
+                            .map((verse) => `${verse.aya_text} `)
+                            .join("")}
+                    </ThemedText>
                 </View>
             </View>
-        </View>
+        </ScrollView>
     );
 
     return (
         <ThemedView style={styles.container}>
+            <Stack.Screen
+                options={{
+                    headerShown: false,
+                }}
+            />
             <FlatList
+                ref={flatListRef}
                 data={pages}
                 renderItem={renderPage}
                 keyExtractor={(page) => page.pageNumber.toString()}
                 horizontal
-                pagingEnabled
                 inverted
+                pagingEnabled
                 showsHorizontalScrollIndicator={false}
-                initialScrollIndex={0}
-                getItemLayout={(data, index) => ({
-                    length: width,
-                    offset: width * index,
-                    index,
-                })}
+                onViewableItemsChanged={onViewableItemsChanged}
+                viewabilityConfig={viewabilityConfig}
+                windowSize={3}
+                maxToRenderPerBatch={3}
+                removeClippedSubviews={true}
             />
         </ThemedView>
     );
@@ -278,38 +318,20 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: "#F8F3E8",
     },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+    },
     pageContainer: {
         flex: 1,
         paddingVertical: spacing.lg,
     },
-    surahHeaderContainer: {
-        height: 100,
-        alignItems: "center",
-        justifyContent: "center",
-        marginTop: spacing.md,
-        marginBottom: spacing.xl,
-        position: "relative",
-    },
-    headerFrameContainer: {
-        position: "absolute",
-        width: "85%",
-        height: "100%",
-    },
-    surahHeader: {
-        alignItems: "center",
-        justifyContent: "center",
-        paddingVertical: spacing.md,
-        width: "100%",
-    },
-    surahTitle: {
-        fontSize: 42,
-        fontFamily: "HafsSmart_08",
-        color: "#8A6E52",
-        textAlign: "center",
-    },
     pageContent: {
         flex: 1,
         paddingHorizontal: spacing.xl,
+        backgroundColor: "#FFFFFF",
+        paddingVertical: spacing.md,
     },
     bismillah: {
         alignItems: "center",
@@ -319,66 +341,36 @@ const styles = StyleSheet.create({
     },
     bismillahText: {
         fontSize: 36,
-        fontFamily: "HafsSmart_08",
+        fontFamily: "hafs",
         color: "#8A6E52",
         textAlign: "center",
     },
     versesContainer: {
         flex: 1,
-        paddingBottom: spacing.xl * 2,
-    },
-    verseWrapper: {
-        flexDirection: "row",
-        flexWrap: "wrap",
-        alignItems: "center",
-        justifyContent: "flex-end",
-        marginBottom: spacing.sm,
-    },
-    newLineVerse: {
-        marginTop: spacing.md,
     },
     verseText: {
-        fontSize: 28,
-        fontFamily: "HafsSmart_08",
+        fontSize: 26,
+        fontFamily: "hafs",
         color: "#000000",
         textAlign: "right",
-        lineHeight: 48,
+        lineHeight: 55,
+        writingDirection: "rtl",
     },
-    verseNumberContainer: {
-        width: 40,
-        height: 40,
+    surahHeaderContainer: {
+        flexDirection: "row",
         alignItems: "center",
-        justifyContent: "center",
-        marginHorizontal: 4,
+        padding: spacing.md,
     },
-    verseNumber: {
-        position: "absolute",
-        fontSize: 14,
-        fontFamily: "HafsSmart_08",
+    headerFrameContainer: {
+        marginRight: spacing.md,
+    },
+    surahHeader: {
+        flex: 1,
+    },
+    surahTitle: {
+        fontSize: 24,
+        fontFamily: "hafs",
         color: "#8A6E52",
-    },
-    pageFooter: {
-        position: "absolute",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: 60,
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    pageNumberContainer: {
-        position: "absolute",
-        bottom: spacing.lg,
-        alignSelf: "center",
-        width: 60,
-        height: 30,
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    pageNumber: {
-        position: "absolute",
-        fontSize: 16,
-        fontFamily: "HafsSmart_08",
-        color: "#8A6E52",
+        textAlign: "center",
     },
 });

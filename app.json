@@ -46,11 +46,6 @@
                 "projectId": "5120a044-8eed-49cd-b277-c673679c78ef"
             }
         },
-        "owner": "ahmedalzeer",
-        "fonts": [
-            {
-                "asset": "./assets/fonts/HafsSmart_08.ttf"
-            }
-        ]
+        "owner": "ahmedalzeer"
     }
 }
